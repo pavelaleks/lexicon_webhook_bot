@@ -126,6 +126,7 @@ async def show_course_russian(callback: CallbackQuery):
         "🧭 Курс даёт не только текущий результат, но и уверенную базу на будущее.\n\n"
         "✉ Чтобы узнать расписание или записаться — нажмите кнопку ниже.",
         reply_markup=course_russian_kb
+    )
 
 @dp.callback_query(F.data == "course_exams")
 async def show_course_exams(callback: CallbackQuery):
