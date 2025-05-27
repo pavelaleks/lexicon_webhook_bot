@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 import os
@@ -31,18 +30,23 @@ async def on_shutdown(app):
     await bot.delete_webhook()
     await bot.session.close()
 
+# 👇 простой ответ при GET-запросе по /webhook (для проверки браузером)
+async def test_handler(request):
+    return web.Response(text="Webhook OK!")
+
 # Запуск aiohttp-приложения
 async def create_app():
     app = web.Application()
     app.on_startup.append(on_startup)
     app.on_shutdown.append(on_shutdown)
 
+    # 👇 Регистрируем ответ "Webhook OK!" для браузера
+    app.router.add_get("/webhook", test_handler)
+
+    # 👇 Регистрируем webhook от Telegram
     SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
     setup_application(app, dp, bot=bot)
     return app
-async def test_handler(request):
-    return web.Response(text="Webhook OK!")
 
-app.router.add_get("/webhook", test_handler)
 if __name__ == "__main__":
     web.run_app(create_app(), port=int(os.getenv("PORT", 8080)))
