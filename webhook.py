@@ -1,42 +1,149 @@
-import os
+import asyncio
 import logging
+import os
 
 from aiohttp import web
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums import ParseMode
-from aiogram.types import Message, BotCommand
+from aiogram.types import (
+    Message, CallbackQuery, FSInputFile, BotCommand,
+    InlineKeyboardMarkup, InlineKeyboardButton
+)
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from dotenv import load_dotenv
 from aiogram.client.default import DefaultBotProperties
 
-# Загрузка .env
+from keyboards import (
+    forward_kb, start_options_kb, courses_kb,
+    course_summer_kb, course_russian_kb, course_exams_kb
+)
+
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 PORT = int(os.getenv("PORT", 8080))
 
-# Бот и диспетчер
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=MemoryStorage())
 
-# Хендлер на /start
 @dp.message(F.text == "/start")
 async def start_handler(message: Message):
-    await message.answer("👋 Привет от Леши Буковкина!")
+    photo = FSInputFile("lesha.jpg")
+    await message.answer_photo(
+        photo=photo,
+        caption="<b>👋 Добро пожаловать!</b>\n\n"
+                "Меня зовут Лёша Буковкин — я виртуальный помощник Студии «Лексикон»!\n"
+                "Нажмите кнопку «Вперёд», и я расскажу, чем могу быть полезен.",
+        reply_markup=forward_kb
+    )
 
-# Хук
+@dp.callback_query(F.data == "start_more")
+async def continue_start(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.answer(
+        "<b>Чем я могу помочь:</b>\n\n"
+        "• рассказать о наших курсах и кружках\n"
+        "• познакомить вас с руководителем студии\n"
+        "• передать ваш вопрос Павлу Викторовичу Алексееву\n\n"
+        "👇 Выберите, что вас интересует:",
+        reply_markup=start_options_kb
+    )
+
+@dp.callback_query(F.data == "about_director")
+async def about_director(callback: CallbackQuery):
+    await callback.answer()
+    photo = FSInputFile("alekseev-2.jpg")
+    await callback.message.answer_photo(
+        photo=photo,
+        caption="<b>Павел Викторович Алексеев</b> — профессор, руководитель студии «Лексикон», преподаватель ГАГУ.\n\n"
+                "📚 Доктор филологических наук, исследователь литературы, автор курсов по русскому языку и литературе.\n\n"
+                "Ниже — ссылки, где можно узнать больше:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🌐 Персональный сайт", url="https://palekseev.ru")],
+            [InlineKeyboardButton(text="🏛 На сайте ГАГУ", url="https://www.gasu.ru/university/faculty_and_staff/2296/")],
+            [InlineKeyboardButton(text="⬅ Назад", callback_data="start_more")]
+        ])
+    )
+
+@dp.callback_query(F.data == "show_courses")
+@dp.message(F.text == "/courses")
+async def show_courses(event: CallbackQuery | Message):
+    if isinstance(event, CallbackQuery):
+        await event.answer()
+        msg = event.message
+    else:
+        msg = event
+    await msg.answer("<b>Выберите интересующий вас курс:</b>", reply_markup=courses_kb)
+
+@dp.callback_query(F.data == "course_summer")
+async def show_course_summer(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.answer("Летняя школа: описание...", reply_markup=course_summer_kb)
+
+@dp.callback_query(F.data == "course_russian")
+async def show_course_russian(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.answer("Русский на отлично!: описание...", reply_markup=course_russian_kb)
+
+@dp.callback_query(F.data == "course_exams")
+async def show_course_exams(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.answer("Подготовка к ОГЭ/ЕГЭ: описание...", reply_markup=course_exams_kb)
+
+@dp.callback_query(F.data == "signup_direct")
+@dp.message(F.text == "/signup")
+async def signup_direct(event: CallbackQuery | Message):
+    if isinstance(event, CallbackQuery):
+        await event.answer()
+        msg = event.message
+    else:
+        msg = event
+    await msg.answer("✍️ Напишите, на какой курс хотите записаться — и я передам это Павлу Викторовичу.")
+
+@dp.callback_query(F.data == "write_direct")
+@dp.message(F.text == "/write")
+async def write_direct(event: CallbackQuery | Message):
+    if isinstance(event, CallbackQuery):
+        await event.answer()
+        msg = event.message
+    else:
+        msg = event
+    await msg.answer("💬 Напишите ваш вопрос — и Павел Викторович ответит вам лично.")
+
+@dp.message(F.text == "/about")
+async def about_command(message: Message):
+    await message.answer("О студии Лексикон: подробности...")
+
+@dp.message(F.text == "/location")
+async def location_command(message: Message):
+    await message.answer("📍 Мы находимся по адресу: Горно-Алтайск, пр. Коммунистический, 47", disable_web_page_preview=True)
+
+@dp.message()
+async def forward_message(message: Message):
+    user = message.from_user
+    text = f"<b>Сообщение от @{user.username or 'без username'}:</b>\n\n{message.text}"
+    try:
+        await bot.send_message(chat_id=ADMIN_ID, text=text)
+        await message.answer("Спасибо! Ваше сообщение передано.")
+    except Exception:
+        await message.answer("Произошла ошибка при передаче сообщения.")
+
 async def on_startup(app):
     await bot.set_webhook(WEBHOOK_URL)
     await bot.set_my_commands([
-        BotCommand(command="start", description="Начать"),
+        BotCommand(command="start", description="📍 Старт"),
+        BotCommand(command="courses", description="📚 Курсы"),
+        BotCommand(command="about", description="ℹ️ О студии"),
+        BotCommand(command="write", description="✉️ Написать руководителю"),
+        BotCommand(command="location", description="📍 Где нас найти"),
     ])
 
 async def on_shutdown(app):
     await bot.delete_webhook()
     await bot.session.close()
 
-# Приложение aiohttp
 async def create_app():
     app = web.Application()
     app.on_startup.append(on_startup)
