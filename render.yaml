@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: lexicon-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python webhook.py
+    envVars:
+      - key: BOT_TOKEN
+        value: <вставишь через интерфейс>
+      - key: ADMIN_ID
+        value: <вставишь через интерфейс>
+      - key: WEBHOOK_URL
+        value: https://<render-ссылка>/webhook
+      - key: PORT
+        value: 10000

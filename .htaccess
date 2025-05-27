@@ -1,0 +1,4 @@
+AddHandler fcgid-script .py
+Options +ExecCGI
+RewriteEngine On
+RewriteRule ^(.*)$ fcgi.py/$1 [QSA,L]
