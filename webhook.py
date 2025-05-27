@@ -40,6 +40,9 @@ async def create_app():
     SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
     setup_application(app, dp, bot=bot)
     return app
+async def test_handler(request):
+    return web.Response(text="Webhook OK!")
 
+app.router.add_get("/webhook", test_handler)
 if __name__ == "__main__":
     web.run_app(create_app(), port=int(os.getenv("PORT", 8080)))
