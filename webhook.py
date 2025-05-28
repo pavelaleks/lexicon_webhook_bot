@@ -234,6 +234,11 @@ app.on_shutdown.append(on_shutdown)
 SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=WEBHOOK_PATH)
 setup_application(app, dp, bot=bot)
 
+async def root_handler(request):
+    return web.Response(text="✅ Бот работает.")
+
+app.router.add_get("/", root_handler)
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     port = int(os.getenv("PORT", 8080))
