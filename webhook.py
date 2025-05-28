@@ -173,6 +173,13 @@ async def write_direct(event: CallbackQuery | Message):
         msg = event
     await msg.answer("💬 Напишите ваш вопрос — и Павел Викторович ответит вам лично.")
 
+@dp.callback_query()
+async def log_callback(callback: CallbackQuery):
+    logging.info(
+        f"🔘 Callback: {callback.data} от @{callback.from_user.username or 'без username'} "
+        f"({callback.from_user.id})"
+    )
+
 @dp.message(F.text == "/about")
 async def about_command(message: Message):
     await message.answer(
@@ -215,6 +222,8 @@ WEBHOOK_URL = f"https://lexicon-webhook-bot.onrender.com{WEBHOOK_PATH}"
 
 async def on_startup(app: web.Application):
     await bot.set_webhook(WEBHOOK_URL)
+    logging.info(f"✅ Webhook установлен на {WEBHOOK_URL}")
+
     await bot.set_my_commands([
         BotCommand(command="start", description="📍 Старт"),
         BotCommand(command="courses", description="📚 Курсы"),
@@ -222,10 +231,12 @@ async def on_startup(app: web.Application):
         BotCommand(command="write", description="✉️ Написать руководителю"),
         BotCommand(command="location", description="📍 Где нас найти"),
     ])
+    logging.info("✅ Команды успешно зарегистрированы")
 
 async def on_shutdown(app: web.Application):
     await bot.delete_webhook()
     await bot.session.close()
+    logging.info("🔻 Webhook удалён и сессия закрыта")
 
 app = web.Application()
 app.on_startup.append(on_startup)
@@ -235,11 +246,24 @@ SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=WEBHOOK_PATH)
 setup_application(app, dp, bot=bot)
 
 async def root_handler(request):
+    logging.info("🟢 Получен GET / от Render — бот отвечает.")
     return web.Response(text="✅ Бот работает.")
 
 app.router.add_get("/", root_handler)
 
+
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    import sys
+    import logging
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+        stream=sys.stdout
+    )
+
     port = int(os.getenv("PORT", 8080))
+    logging.info("🚀 Бот запускается...")
     web.run_app(app, port=port)
+
+
