@@ -210,7 +210,7 @@ async def forward_message(message: Message):
     except Exception:
         await message.answer("Произошла ошибка при передаче сообщения.")
 
-async def on_startup(app):
+async def on_startup(app: web.Application):
     await bot.set_webhook(WEBHOOK_URL)
     await bot.set_my_commands([
         BotCommand(command="start", description="📍 Старт"),
@@ -220,18 +220,17 @@ async def on_startup(app):
         BotCommand(command="location", description="📍 Где нас найти"),
     ])
 
-async def on_shutdown(app):
+async def on_shutdown(app: web.Application):
     await bot.delete_webhook()
     await bot.session.close()
 
-async def create_app():
-    app = web.Application()
-    app.on_startup.append(on_startup)
-    app.on_shutdown.append(on_shutdown)
-    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
-    setup_application(app, dp, bot=bot)
-    return app
+app = web.Application()
+app.on_startup.append(on_startup)
+app.on_shutdown.append(on_shutdown)
+
+SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/")
+setup_application(app, dp, bot=bot)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    web.run_app(create_app(), port=PORT)
+    web.run_app(app, port=PORT)
