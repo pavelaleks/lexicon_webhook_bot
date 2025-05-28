@@ -21,9 +21,9 @@ from keyboards import (
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID"))
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-PORT = int(os.getenv("PORT", 8080))
+ADMIN_ID = os.getenv("ADMIN_ID")
+WEBHOOK_PATH = "/webhook"
+WEBHOOK_URL = f"https://lexicon-webhook-bot.onrender.com{WEBHOOK_PATH}"
 
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=MemoryStorage())
@@ -210,6 +210,9 @@ async def forward_message(message: Message):
     except Exception:
         await message.answer("Произошла ошибка при передаче сообщения.")
 
+WEBHOOK_PATH = "/webhook"
+WEBHOOK_URL = f"https://lexicon-webhook-bot.onrender.com{WEBHOOK_PATH}"
+
 async def on_startup(app: web.Application):
     await bot.set_webhook(WEBHOOK_URL)
     await bot.set_my_commands([
@@ -228,9 +231,10 @@ app = web.Application()
 app.on_startup.append(on_startup)
 app.on_shutdown.append(on_shutdown)
 
-SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/")
+SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=WEBHOOK_PATH)
 setup_application(app, dp, bot=bot)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    web.run_app(app, port=PORT)
+    port = int(os.getenv("PORT", 8080))
+    web.run_app(app, port=port)
