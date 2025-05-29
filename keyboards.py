@@ -15,7 +15,7 @@ start_options_kb = InlineKeyboardMarkup(inline_keyboard=[
 
 # Список курсов
 courses_kb = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="🌞 Летняя школа (1–14 июня)", callback_data="course_summer")],
+    [InlineKeyboardButton(text="🌞 Летняя школа (9–20 июня)", callback_data="course_summer")],
     [InlineKeyboardButton(text="📘 Русский на отлично! (с 1 августа)", callback_data="course_russian")],
     [InlineKeyboardButton(text="📚 Подготовка к ОГЭ/ЕГЭ (с 1 сентября)", callback_data="course_exams")]
 ])
